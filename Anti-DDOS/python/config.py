@@ -1,3 +1,7 @@
+# Set realtime process
+from os import system
+system("wmic process where name=\"Anti-DDOS.exe\" CALL setpriority 256 > NUL 2>&1")
+
 ## Config file
 
 # ip host fake
