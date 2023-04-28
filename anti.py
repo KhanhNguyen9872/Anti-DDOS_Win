@@ -19,7 +19,6 @@ if (__name__ == "__main__"):
             int("KhanhNguyen9872")
     except:
         get_fb=str(input("Input Facebook Admin: "))
-    get_fb="https://fb.me/khanh10a1"
     if (get_fb == "https://fb.me/khanh10a1"):
         def kill_process():
             print(f"\nClosing process....")
