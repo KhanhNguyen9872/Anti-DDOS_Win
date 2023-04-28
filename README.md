@@ -17,14 +17,6 @@ Best tool Anti-DDOS on Windows. Forward a port fake for check DDOS then block th
 
 `Note: You can change settings from config.py file`
 
-## How to compile?
-1. Install `Microsoft Visual Studio 2022` on Windows
-2. Download this repo [here](https://github.com/KhanhNguyen9872/Anti-DDOS_Win/archive/refs/heads/main.zip)
-3. Unzip file and then open this project in VS2022
-4. Run compile EXE
-5. Copy all file in `python` folder and paste into `Release` folder
-6. Run `Anti-DDOS.exe` and enjoy
-
 ## Issue
 - You can create a issue [here](https://github.com/KhanhNguyen9872/anti_ddos_python3_win/issues)
 
