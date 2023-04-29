@@ -20,6 +20,21 @@ if (__name__ == "__main__"):
     except:
         get_fb=str(input("Input Facebook Admin: "))
     if (get_fb == "https://fb.me/khanh10a1"):
+        def time_run():
+            global time_count
+            time_count=0
+            while 1:
+                sleep(1)
+                time_count+=1
+        def block_with_time(ip,time,is_add=1):
+            global block,time_count
+            if is_add==1:
+                block.append(ip)
+            while time_count<=time:
+                sleep(1)
+            block.remove(ip)
+            print("Unblock: {} (Out of time)".format(ip))
+            return
         def kill_process():
             print(f"\nClosing process....")
             if hasattr(signal, 'SIGKILL'):
@@ -30,12 +45,17 @@ if (__name__ == "__main__"):
         def clear():
             system("cls")
         def forward(ip,port,source,destination,is_a,is_user_send):
+            global time_count
             len_data = -1
+            if reset_send_data_user!=0:
+                time=time_count+(reset_send_data_user*60)
+            else:
+                time=-1
             try:
                 string = " "
                 while string:
                     if len_data<max_data_user:
-                        string = source.recv(1024)
+                        string = source.recv(65535)
                         if string:
                             if max_data_user>0 or is_user_send==0:
                                 len_data+=len(string)
@@ -44,8 +64,15 @@ if (__name__ == "__main__"):
                             source.shutdown(socket.SHUT_RD)
                             destination.shutdown(socket.SHUT_WR)
                     else:
-                        print("Out of size data: Port {} from {} ({} byte)".format(port,ip,max_data_user))
+                        print("Out of data on {} min: Port {} from {} ({} byte)".format(reset_send_data_user,port,ip,max_data_user))
+                        if block_time!=0:
+                            Thread(target=block_with_time,args=(ip,time_count+(block_time*60))).start()
                         break
+                    if time==-1:
+                        continue
+                    elif time_count>time:
+                        time=time_count+(reset_send_data_user*60)
+                        len_data=0
             except TimeoutError:
                 print(">> Timeout: Port {} from {}".format(str(port),str(ip)))
             except ConnectionAbortedError:
@@ -74,14 +101,21 @@ if (__name__ == "__main__"):
             return
 
         def block_ip(con_ip,port,a):
-            global ddos, force_block, list_ban_ip
+            global ddos, force_block, list_ban_ip, time_count
             a.close()
-            if (len(list_ban_ip)<8111):
-                list_ban_ip+=str(","+con_ip)
-            add_ip_rule(port)
-            with open("block_ip.txt","a") as f:
-                f.write(",{},\n".format(con_ip))
             force_block[con_ip]=0
+            if type_block==2:
+                if (len(list_ban_ip)<8111):
+                    list_ban_ip+=str(","+con_ip)
+                add_ip_rule(port)
+                with open("block_ip.txt","a") as f:
+                    f.write(",{},\n".format(con_ip))
+            elif type_block==3:
+                if block_time!=0:
+                    print("Block {} for {} minutes".format(con_ip,block_time))
+                    block_with_time(con_ip,time_count+(block_time*60),0)
+            return
+
         def create_rule(port):
             global list_ban_ip
             if (Popen("netsh advfirewall firewall show rule name=\"Khanh {0}\"".format(str(port)), shell=True, stdout=PIPE).stdout.read().decode().split("\r\n")[1][:2]=="No"):
@@ -93,10 +127,14 @@ if (__name__ == "__main__"):
                 list_ban_ip=str(",".join(list(set(list_ban_ip.split(",")))))
                 _=Popen("netsh advfirewall firewall set rule name=\"Khanh {0}\" new remoteip=\"{1}\"".format(str(port),str(list_ban_ip)),shell=True,stdin=PIPE,stdout=DEVNULL)
             _=Popen("netsh advfirewall firewall set rule name=\"Khanh {0}\" new enable=yes".format(str(port)),shell=True,stdin=PIPE,stdout=DEVNULL)
+            return
+
         def add_ip_rule(port):
             global list_ban_ip
             if (len(list_ban_ip)<8111):
                 _=Popen("netsh advfirewall firewall set rule name=\"Khanh {0}\" new remoteip=\"{1}\"".format(str(port),str(list_ban_ip)),shell=True,stdin=PIPE,stdout=DEVNULL)
+            return
+
         def open_port(port):
             global ddos, block, force_block, list_ban_ip, max_conn, count_conn, all_conn
             current_conn=[]
@@ -108,6 +146,7 @@ if (__name__ == "__main__"):
                 soc.bind((str(host_fake), int(port)))
                 soc.listen(9)
                 create_rule(port)
+                Thread(target=time_run, args=()).start()
                 print(">> Started! (KhanhNguyen9872)")
                 while 1:
                     try:
@@ -141,18 +180,22 @@ if (__name__ == "__main__"):
                                         continue
                                 except:
                                     ddos[b[0]]=1
+                                if b[0] not in current_conn:
+                                    count_conn+=1
+                                    is_a=1
+                                else:
+                                    is_a=0
                                 current_conn.append(b[0])
                                 all_conn.append("conn_"+str(b[0])+str(b[1]))
                                 globals()["conn_"+str(b[0])+str(b[1])]=a
-                                count_conn+=1
                                 count+=1
                                 print(f"{count}. Port {port} -> {port_real} | Accept: {b[0]} ({ddos[b[0]]})")
                                 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                                 server_socket.settimeout(5)
                                 server_socket.connect((str(host_real), int(port_real)))
-                                server_socket.settimeout(180)
-                                a.settimeout(180)
-                                Thread(target=forward, args=(b[0],port,a,server_socket,1,1)).start()
+                                server_socket.settimeout(timeout_conn)
+                                a.settimeout(timeout_conn)
+                                Thread(target=forward, args=(b[0],port,a,server_socket,1,is_a)).start()
                                 Thread(target=forward, args=(b[0],port,server_socket,a,0,0)).start()
                             else:
                                 print("Full connection {}".format(b[0]))
@@ -242,6 +285,17 @@ if (__name__ == "__main__"):
                 if (int(len([str(x) for x in host_fake.split(".") if x and x!="\n"])+len([str(x) for x in host_real.split(".") if x and x!="\n"])) != 8):
                     print("ip fake or real may be not correct!")
                     _=int("KhanhNguyen9872")
+                if int(timeout_conn)<1:
+                    print("timeout conn should not be less than 1")
+                    _=int("KhanhNguyen9872")
+                if int(type_block)==1 or int(type_block)==2 or int(type_block)==3:
+                    pass
+                else:
+                    print("type block must be 1 or 2 or 3")
+                    _=int("KhanhNguyen9872")
+                if int(reset_send_data_user)<0:
+                    print("reset send data user should not be less than 0")
+                    _=int("KhanhNguyen9872")
                 if int(max_conn)<1:
                     print("max conn should not be less than 1")
                     _=int("KhanhNguyen9872")
@@ -277,8 +331,12 @@ if (__name__ == "__main__"):
                 print("\n>> Config file is error!")
                 input()
                 kill_process()
-            with open("block_ip.txt","r") as f:
-                block=[str(x) for x in f.read().split(",") if x and x!="\n"]
+            try:
+                with open("block_ip.txt","r") as f:
+                    block=[str(x) for x in f.read().split(",") if x and x!="\n"]
+            except FileNotFoundError:
+                open("block_ip.txt","w").write('')
+                block=[]
             for i in block:
                 list_ban_ip+=str(",{0}".format(str(i)))
             if (int(is_get_sock)==1):
