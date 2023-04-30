@@ -32,7 +32,8 @@ if (__name__ == "__main__"):
                 block.append(ip)
             while time_count<=time:
                 sleep(1)
-            block.remove(ip)
+            while ip in block:
+                block.remove(ip)
             print("Unblock: {} (Out of time)".format(ip))
             return
         def kill_process():
