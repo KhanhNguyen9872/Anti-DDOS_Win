@@ -23,7 +23,7 @@ type_block_send_data = 0
 
 # block time on [minutes] if spam or send data large than max_data_user, 0 for disable
 # this will unblock after your input minutes
-block_time = 1  # 30 minutes
+block_time = 30  # 30 minutes
 
 # timeout a connection on [minutes] when user or server not send any data
 # user can connect again when timeout
