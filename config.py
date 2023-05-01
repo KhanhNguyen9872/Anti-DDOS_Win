@@ -12,19 +12,30 @@ max_data_user = 52428800  # 50mb        # use 0 for disable
 # reset user send data length on [minutes], 0 for disable
 reset_send_data_user = 1  # 1 minutes
 
+########################################
+# type when block user send data large
+# 0 -> just disconnect user from server
+# 1 -> block a ip on ram [will unblock if you close anti-tool, not write to block_ip.txt and not add rule to Windows Firewall]
+# 2 -> block a ip forever [write to block_ip.txt and add to rule on Windows Firewall]
+# 3 -> block a ip on time (block_time) [will unblock when out of time]
+type_block_send_data = 0
+########################################
+
 # block time on [minutes] if spam or send data large than max_data_user, 0 for disable
 # this will unblock after your input minutes
-block_time = 30  # 30 minutes
+block_time = 1  # 30 minutes
 
 # timeout a connection on [minutes] when user or server not send any data
 # user can connect again when timeout
 timeout_conn = 180  # 180 seconds
 
-# type when block user
+########################################
+# type when block user spam
 # 1 -> block a ip on ram [will unblock if you close anti-tool, not write to block_ip.txt and not add rule to Windows Firewall]
 # 2 -> block a ip forever [write to block_ip.txt and add to rule on Windows Firewall]
 # 3 -> block a ip on time (block_time) [will unblock when out of time]
-type_block = 3
+type_block_spam = 2
+########################################
 
 # ip host fake
 host_fake="0.0.0.0"

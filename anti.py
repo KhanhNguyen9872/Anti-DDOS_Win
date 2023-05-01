@@ -46,7 +46,7 @@ if (__name__ == "__main__"):
         def clear():
             system("cls")
         def forward(ip,port,source,destination,is_a,is_user_send):
-            global time_count
+            global time_count,block
             len_data = -1
             if reset_send_data_user!=0:
                 time=time_count+(reset_send_data_user*60)
@@ -66,8 +66,11 @@ if (__name__ == "__main__"):
                             destination.shutdown(socket.SHUT_WR)
                     else:
                         print("Out of data on {} min: Port {} from {} ({} byte)".format(reset_send_data_user,port,ip,max_data_user))
-                        if block_time!=0:
-                            Thread(target=block_with_time,args=(ip,time_count+(block_time*60))).start()
+                        #if block_time!=0:
+                            #Thread(target=block_with_time,args=(ip,time_count+(block_time*60))).start()
+                        if type_block_send_data!=0:
+                            block.append(ip)
+                            block_ip(ip,port,source,1)
                         break
                     if time==-1:
                         continue
@@ -94,6 +97,11 @@ if (__name__ == "__main__"):
                 return
 
         def close_conn():
+            global all_conn, soc
+            try:
+                soc.close()
+            except:
+                pass
             for i in all_conn:
                 try:
                     globals()[i].close()
@@ -101,20 +109,32 @@ if (__name__ == "__main__"):
                     pass
             return
 
-        def block_ip(con_ip,port,a):
-            global ddos, force_block, list_ban_ip, time_count
-            a.close()
+        def block_ip(con_ip,port,a,z=0):
+            global ddos, force_block, list_ban_ip, time_count, all_conn
             force_block[con_ip]=0
-            if type_block==2:
+            if (type_block_spam==2 and z==0) or (type_block_send_data==2 and z==1):
+                print("Block IP forever: {}".format(con_ip))
                 if (len(list_ban_ip)<8111):
                     list_ban_ip+=str(","+con_ip)
                 add_ip_rule(port)
                 with open("block_ip.txt","a") as f:
                     f.write(",{},\n".format(con_ip))
-            elif type_block==3:
+            elif (type_block_spam==3 and z==0) or (type_block_send_data==3 and z==1):
                 if block_time!=0:
                     print("Block {} for {} minutes".format(con_ip,block_time))
-                    block_with_time(con_ip,time_count+(block_time*60),0)
+                    Thread(target=block_with_time, args=(con_ip,time_count+(block_time*60),0)).start()
+            else:
+                print("Block on ram: {}".format(con_ip))
+            print("Close all connection from {}".format(con_ip))
+            try:
+                a.close()
+            except:
+                pass
+            for i in [s for s in all_conn if "conn_{}".format(con_ip) in s]:
+                try:
+                    globals()[i].close()
+                except:
+                    pass
             return
 
         def create_rule(port):
@@ -137,7 +157,7 @@ if (__name__ == "__main__"):
             return
 
         def open_port(port):
-            global ddos, block, force_block, list_ban_ip, max_conn, count_conn, all_conn
+            global ddos, block, force_block, list_ban_ip, max_conn, count_conn, all_conn, soc
             current_conn=[]
             all_conn=[]
             count=0
@@ -203,9 +223,11 @@ if (__name__ == "__main__"):
                                 a.close()
                         sleep(float(time_connect))
                     except OSError as e:
-                        print(f"ERROR: Port {port} | {e}")
-                        a.close()
-                        continue
+                        if '[closed]' not in str(soc):
+                            print(f"ERROR: Port {port} | {e}")
+                            a.close()
+                            continue
+                        break
                     except:
                         continue
             except PermissionError:
@@ -250,8 +272,9 @@ if (__name__ == "__main__"):
                     ddos={}
                     sleep(float(reset_on_time))
                 except KeyboardInterrupt:
-                    print(">> Press Enter to Exit!")
-                    input()
+                    print("Stopping all connection....")
+                    close_conn()
+                    input(">> Press Enter to Exit!")
                     kill_process()
         from os import kill, getpid, name, system, remove
         system("wmic process where name=\"Anti-DDOS.exe\" CALL setpriority 256 > NUL 2>&1")
@@ -289,10 +312,15 @@ if (__name__ == "__main__"):
                 if int(timeout_conn)<1:
                     print("timeout conn should not be less than 1")
                     _=int("KhanhNguyen9872")
-                if int(type_block)==1 or int(type_block)==2 or int(type_block)==3:
+                if int(type_block_send_data)==0 or int(type_block_send_data)==1 or int(type_block_send_data)==2 or int(type_block_send_data)==3:
                     pass
                 else:
-                    print("type block must be 1 or 2 or 3")
+                    print("type block send data must be 0 or 1 or 2 or 3")
+                    _=int("KhanhNguyen9872")
+                if int(type_block_spam)==1 or int(type_block_spam)==2 or int(type_block_spam)==3:
+                    pass
+                else:
+                    print("type block spam must be 1 or 2 or 3")
                     _=int("KhanhNguyen9872")
                 if int(reset_send_data_user)<0:
                     print("reset send data user should not be less than 0")
@@ -344,6 +372,7 @@ if (__name__ == "__main__"):
                 try:
                     with open("proxy.txt","r") as f:
                         while 1:
+                            system("cls")
                             khanh=str(input("Found: proxy.txt\nNote: Y for load proxy, N for download new sock proxy\n>> Do you want to load proxy from this file? [Y/N]: "))
                             if (khanh == "Y") or (khanh == "y"):
                                 exec("global blockk; {}".format(f.read()))
@@ -415,8 +444,7 @@ if (__name__ == "__main__"):
             except KeyboardInterrupt:
                 print("Stopping all connection....")
                 close_conn()
-                print(">> Press Enter to Exit!")
-                input()
+                input(">> Press Enter to Exit!")
                 kill_process()
         else:
             print("\n>> This tool work only on Windows!\n")
