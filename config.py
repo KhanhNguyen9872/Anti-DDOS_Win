@@ -3,10 +3,10 @@
 ##### sorry! i'm bad english! #####
 
 # limit speed / 1 second (user to server) (megabyte/second)
-max_speed_user = 8   # 4mb/s   # 0 for unlimited
+max_speed_user = 4   # 4mb/s   # 0 for unlimited
 
 # limit speed / 1 second (server to user) (megabyte/second)
-max_speed_server = 8   # 4mb/s   # 0 for unlimited
+max_speed_server = 4   # 4mb/s   # 0 for unlimited
 
 # max ip can connect in one time
 # user can connect again at next time without +conn!
