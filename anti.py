@@ -90,8 +90,8 @@ if (__name__ == "__main__"):
             if is_a==1:
                 global count_conn
                 count_conn-=1
-                all_conn.remove("conn_"+str(ip)+str(b))
-                del globals()["conn_"+str(ip)+str(b)]
+                all_conn.remove("conn_"+str(ip)+":"+str(b))
+                del globals()["conn_"+str(ip)+":"+str(b)]
             try:
                 source.shutdown(socket.SHUT_RD)
                 destination.shutdown(socket.SHUT_WR)
@@ -132,7 +132,7 @@ if (__name__ == "__main__"):
                 a.close()
             except:
                 pass
-            for i in [s for s in all_conn if "conn_{}".format(con_ip) in s]:
+            for i in [s for s in all_conn if "conn_{}:".format(con_ip) in s]:
                 try:
                     all_conn.remove(i)
                 except:
@@ -213,8 +213,8 @@ if (__name__ == "__main__"):
                                 else:
                                     is_a=0
                                 current_conn.append(b[0])
-                                all_conn.append("conn_"+str(b[0])+str(b[1]))
-                                globals()["conn_"+str(b[0])+str(b[1])]=a
+                                all_conn.append("conn_"+str(b[0])+":"+str(b[1]))
+                                globals()["conn_"+str(b[0])+":"+str(b[1])]=a
                                 count+=1
                                 print(f"{count}. Port {port} -> {port_real} | Accept: {b[0]} ({ddos[b[0]]})")
                                 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
