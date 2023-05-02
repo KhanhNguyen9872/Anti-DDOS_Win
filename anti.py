@@ -53,6 +53,9 @@ if (__name__ == "__main__"):
             else:
                 byte_s=int(globals()["byte_send_server"])
                 time_s=float(globals()["time_send_server"])
+            if byte_s==0:
+                byte_s=65535
+                time_s=0
             len_data = -1
             if reset_send_data_user!=0:
                 time=time_count+(reset_send_data_user*60)
