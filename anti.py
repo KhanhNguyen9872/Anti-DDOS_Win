@@ -47,6 +47,12 @@ if (__name__ == "__main__"):
             system("cls")
         def forward(ip,port,source,destination,is_a,is_user_send,b=""):
             global time_count,block
+            if is_a==1:
+                byte_s=int(globals()["byte_send_user"])
+                time_s=float(globals()["time_send_user"])
+            else:
+                byte_s=int(globals()["byte_send_server"])
+                time_s=float(globals()["time_send_server"])
             len_data = -1
             if reset_send_data_user!=0:
                 time=time_count+(reset_send_data_user*60)
@@ -56,25 +62,24 @@ if (__name__ == "__main__"):
                 string = " "
                 while string:
                     if len_data<max_data_user:
-                        string = source.recv(65535)
+                        string = source.recv(byte_s)
                         if string:
-                            if max_data_user>0 or is_user_send==0:
+                            if max_data_user>0 and is_user_send==0:
                                 len_data+=len(string)
                             destination.sendall(string)
                         else:
                             source.shutdown(socket.SHUT_RD)
                             destination.shutdown(socket.SHUT_WR)
+                        sleep(time_s)
                     else:
                         print("Out of data on {} min: Port {} from {} ({} byte)".format(reset_send_data_user,port,ip,max_data_user))
-                        #if block_time!=0:
-                            #Thread(target=block_with_time,args=(ip,time_count+(block_time*60))).start()
                         if type_block_send_data!=0:
                             block.append(ip)
                             block_ip(ip,port,source,1)
                         break
                     if time==-1:
                         continue
-                    elif time_count>time:
+                    elif time_count>time and max_data_user>0:
                         time=time_count+(reset_send_data_user*60)
                         len_data=0
             except TimeoutError:
@@ -315,6 +320,12 @@ if (__name__ == "__main__"):
                 if (int(len([str(x) for x in host_fake.split(".") if x and x!="\n"])+len([str(x) for x in host_real.split(".") if x and x!="\n"])) != 8):
                     print("ip fake or real may be not correct!")
                     _=int("KhanhNguyen9872")
+                if int(max_speed_user)<0:
+                    print("max speed user should not be less than 0")
+                    _=int("KhanhNguyen9872")
+                if int(max_speed_server)<0:
+                    print("max speed server should not be less than 0")
+                    _=int("KhanhNguyen9872")
                 if int(timeout_conn)<1:
                     print("timeout conn should not be less than 1")
                     _=int("KhanhNguyen9872")
@@ -366,6 +377,11 @@ if (__name__ == "__main__"):
                 print("\n>> Config file is error!")
                 input()
                 kill_process()
+            global byte_send_user, byte_send_server, time_send_user, time_send_server
+            byte_send_user = int((max_speed_user * 1024)/4)
+            time_send_user = 1/4 + 0.01
+            byte_send_server = int((max_speed_user * 1024)/4)
+            time_send_server = 1/4 + 0.01
             try:
                 with open("block_ip.txt","r") as f:
                     block=[str(x) for x in f.read().split(",") if x and x!="\n"]

@@ -2,6 +2,12 @@
 
 ##### sorry! i'm bad english! #####
 
+# limit speed / 1 second (user to server) (kilobyte)
+max_speed_user = 4096   # 4mb/s
+
+# limit speed / 1 second (server to user) (kilobyte)
+max_speed_server = 4096   # 4mb/s
+
 # max ip can connect in one time
 # user can connect again at next time without +conn!
 max_conn = 30  # 30 connection
