@@ -45,7 +45,7 @@ if (__name__ == "__main__"):
             sys.exit()
         def clear():
             system("cls")
-        def forward(ip,port,source,destination,is_a,is_user_send):
+        def forward(ip,port,source,destination,is_a,is_user_send,b=""):
             global time_count,block
             len_data = -1
             if reset_send_data_user!=0:
@@ -90,6 +90,8 @@ if (__name__ == "__main__"):
             if is_a==1:
                 global count_conn
                 count_conn-=1
+                all_conn.remove("conn_"+str(ip)+str(b))
+                del globals()["conn_"+str(ip)+str(b)]
             try:
                 source.shutdown(socket.SHUT_RD)
                 destination.shutdown(socket.SHUT_WR)
@@ -131,6 +133,10 @@ if (__name__ == "__main__"):
             except:
                 pass
             for i in [s for s in all_conn if "conn_{}".format(con_ip) in s]:
+                try:
+                    all_conn.remove(i)
+                except:
+                    pass
                 try:
                     globals()[i].close()
                 except:
@@ -216,7 +222,7 @@ if (__name__ == "__main__"):
                                 server_socket.connect((str(host_real), int(port_real)))
                                 server_socket.settimeout(timeout_conn)
                                 a.settimeout(timeout_conn)
-                                Thread(target=forward, args=(b[0],port,a,server_socket,1,is_a)).start()
+                                Thread(target=forward, args=(b[0],port,a,server_socket,1,is_a,b[1])).start()
                                 Thread(target=forward, args=(b[0],port,server_socket,a,0,0)).start()
                             else:
                                 print("Full connection {}".format(b[0]))
