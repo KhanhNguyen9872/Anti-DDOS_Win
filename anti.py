@@ -320,11 +320,11 @@ if (__name__ == "__main__"):
                 if (int(len([str(x) for x in host_fake.split(".") if x and x!="\n"])+len([str(x) for x in host_real.split(".") if x and x!="\n"])) != 8):
                     print("ip fake or real may be not correct!")
                     _=int("KhanhNguyen9872")
-                if int(max_speed_user)<0:
-                    print("max speed user should not be less than 0")
+                if int(max_speed_user)<0.001:
+                    print("max speed user should not be less than 0.001")
                     _=int("KhanhNguyen9872")
-                if int(max_speed_server)<0:
-                    print("max speed server should not be less than 0")
+                if int(max_speed_server)<0.001:
+                    print("max speed server should not be less than 0.001")
                     _=int("KhanhNguyen9872")
                 if int(timeout_conn)<1:
                     print("timeout conn should not be less than 1")
@@ -378,10 +378,10 @@ if (__name__ == "__main__"):
                 input()
                 kill_process()
             global byte_send_user, byte_send_server, time_send_user, time_send_server
-            byte_send_user = int((max_speed_user * 1024)/4)
-            time_send_user = 1/4 + 0.01
-            byte_send_server = int((max_speed_user * 1024)/4)
-            time_send_server = 1/4 + 0.01
+            byte_send_user = int((max_speed_user * 1024 * 1024)/70)
+            time_send_user = 1/1000
+            byte_send_server = int((max_speed_user * 1024 * 1024)/70)
+            time_send_server = 1/1000
             try:
                 with open("block_ip.txt","r") as f:
                     block=[str(x) for x in f.read().split(",") if x and x!="\n"]
